@@ -7,7 +7,12 @@
 
     [CanDeprecate]
     [Table("Posts", Schema = "blog")]
-    public class BlogPostDto
+    [Trigger(
+        TriggerType.BeforeDelete,
+        CreateTriggerScript = "DELETE FROM CommentDto WHERE CommentDto.BlogPostId = (deleted/OLD).Id;",
+        RequiredTypes = new[] { typeof(CommentDto) }
+    )]
+    public class BlogPostDto : DtoBase
     {
         [Key]
         public int Id { get; set; }

@@ -5,20 +5,15 @@
     [AttributeUsage(AttributeTargets.Class, AllowMultiple = true)]
     public class TriggerAttribute : Attribute
     {
-        public string Name { get; }
-        public string TriggerStatement { get; }
-        public Type[] Dependencies { get; }
+        public TriggerType TriggerType { get; }
 
-        public TriggerAttribute(DatastoreContext context, string name, string triggerStatement, Type[] dependencies = null)
+        public string CreateTriggerScript { get; set; }
+
+        public Type[] RequiredTypes { get; set; }
+
+        public TriggerAttribute(TriggerType type)
         {
-            Name = name;
-            TriggerStatement = triggerStatement;
-            Dependencies = dependencies;
-
-            foreach(var type in dependencies)
-            {
-                TriggerStatement = context.Uses(TriggerStatement, type);
-            }
+            TriggerType = type;
         }
     }
 }
