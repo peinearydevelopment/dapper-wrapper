@@ -61,7 +61,7 @@
             }
         }
 
-        private DbColumn[] Columns
+        public DbColumn[] Columns
         {
             get
             {
@@ -96,8 +96,8 @@
             { typeof(double), "REAL" },
             { typeof(decimal), "NUMERIC" },
             { typeof(bool), "NUMERIC" },
-            { typeof(DateTime), "NUMERIC" },
-            { typeof(DateTimeOffset), "NUMERIC" }
+            { typeof(DateTime), "DATETIME" },
+            { typeof(DateTimeOffset), "DATETIME" }
         };
     }
 }

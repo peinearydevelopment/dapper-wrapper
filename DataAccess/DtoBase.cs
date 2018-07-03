@@ -3,9 +3,12 @@
     using DataAccess.Attributes;
     using DataAccess.Datastore;
     using System;
+    using System.Collections.Generic;
     using System.ComponentModel.DataAnnotations.Schema;
+    using System.Dynamic;
     using System.Linq;
     using System.Reflection;
+    using System.Text;
 
     public class DtoBase
     {
@@ -78,6 +81,25 @@
 
                 return _triggersInformation;
             }
+        }
+
+        public (string sql, object parameters) CreateInsertSqlStatement(ConnectionType connectionType)
+        {
+            var insertBegin = $"INSERT INTO {TableInformation.TableName(connectionType)}";
+            var columnNamesStringBuilder = new StringBuilder();
+            var columnValueParametersStringBuilder = new StringBuilder();
+            var columnValues = new ExpandoObject() as IDictionary<string, Object>;
+            foreach (var column in TableInformation.Columns)
+            {
+                columnNamesStringBuilder.Append(column.Name).Append(", ");
+                columnValueParametersStringBuilder.Append("@").Append(column.Name).Append(", ");
+                columnValues.Add(column.Name, _type.GetProperty(column.Name).GetValue(this, null));
+            }
+
+            return (
+                sql: $"{insertBegin} ({columnNamesStringBuilder.ToString(0, columnNamesStringBuilder.Length - 2)}) VALUES ({columnValueParametersStringBuilder.ToString(0, columnValueParametersStringBuilder.Length - 2)})",
+                parameters: columnValues
+            );
         }
 
         private DbTable _tableInformation { get; set; }
