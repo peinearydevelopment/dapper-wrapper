@@ -8,5 +8,6 @@
         public Type Type { get; set; }
         public bool IsKey { get; set; }
         public bool IsNullable { get; set; }
+        public DbForeignKey ForeignKey { get; set; }
     }
 }

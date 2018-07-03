@@ -7,8 +7,10 @@
     using NUnit.Framework;
     using System;
     using System.Collections.Generic;
+    using System.Data;
     using System.Data.SqlClient;
     using System.Linq;
+    using static Dapper.SqlMapper;
 
     [SetUpFixture]
     public class Setup
@@ -40,6 +42,8 @@
         [OneTimeSetUp]
         public void SetupDatabase()
         {
+            AddTypeHandler(new DateTimeOffsetHandler());
+
             var connection = ServiceProvider.GetService<SqliteConnection>();
 
             var dtos = GetDbClasses().Select(dbClass => (DtoBase)Activator.CreateInstance(dbClass)).ToArray();
@@ -80,6 +84,19 @@
                 .Assembly
                 .GetTypes()
                 .Where(type => type.IsSubclassOf(typeof(DtoBase)));
+        }
+    }
+
+    public class DateTimeOffsetHandler : TypeHandler<DateTimeOffset>
+    {
+        public override void SetValue(IDbDataParameter parameter, DateTimeOffset value)
+        {
+            parameter.Value = value;
+        }
+
+        public override DateTimeOffset Parse(object value)
+        {
+            return DateTimeOffset.Parse(value.ToString());
         }
     }
 }

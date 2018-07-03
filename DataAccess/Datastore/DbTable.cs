@@ -11,24 +11,25 @@
     {
         public string Schema { get; set; }
         public string Name { get; set; }
-        public Type Type { get; set; }
+        public DtoBase DtoBase { get; set; }
 
         public static DbTable EmptyDbTable = new DbTable();
 
-        public string TableName(ConnectionType connectionType)
+        public string TableName(ConnectionType connectionType, Type tableType = null)
         {
             if (this == EmptyDbTable)
             {
                 throw new NotSupportedException("No sql string can be created for an empty db table.");
             }
 
+            var tableAttribute = tableType?.GetCustomAttribute<TableAttribute>();
             switch (connectionType)
             {
                 case ConnectionType.SqLite:
-                    return $"[{Schema}_{Name}]";
+                    return $"[{(tableAttribute == null ? Schema : tableAttribute.Schema)}_{(tableAttribute == null ? Name : tableAttribute.Name)}]";
                 case ConnectionType.MsSql:
                 default:
-                    return $"[{Schema}].[{Name}]";
+                    return $"[{(tableAttribute == null ? Schema : tableAttribute.Schema)}].[{(tableAttribute == null ? Name : tableAttribute.Name)}]";
             }
         }
 
@@ -42,48 +43,29 @@
             switch (connectionType)
             {
                 case ConnectionType.SqLite:
-                    return $@"CREATE TABLE {TableName(connectionType)}
-(
-    {string.Join(
+                    var columns = string.Join(
 ",\n\t",
-        Columns.Select(column =>
+        DtoBase.Columns.Select(column =>
         {
             column.IsNullable = column.Type.IsGenericType && column.Type.GetGenericTypeDefinition() == typeof(Nullable<>);
             var type = column.IsNullable ? Nullable.GetUnderlyingType(column.Type) : column.Type;
 
+            // Don't use Autoincrement as per docs https://sqlite.org/autoinc.html
             return $"[{column.Name}] [{TypeSqliteTypeMapper[type]}]{(column.IsKey ? " PRIMARY KEY" : string.Empty)}";
-        }))
-    }
+        }));
+
+                    var constraints = DtoBase.ForeignKeys.Any() ? $",\n\t {string.Join(",\n\t", DtoBase.ForeignKeys.Select(foreignKey => $"FOREIGN KEY({foreignKey.PropertyName}) REFERENCES {TableName(connectionType, foreignKey.ForeignType)}({foreignKey.ForeignType.GetProperties().First(property => property.GetCustomAttribute<KeyAttribute>() != null).Name})"))}": string.Empty;
+
+                    return $@"CREATE TABLE {TableName(connectionType)}
+(
+    {columns}
+    {constraints}
 );";
                 case ConnectionType.MsSql:
                 default:
                     throw new NotImplementedException();
             }
         }
-
-        public DbColumn[] Columns
-        {
-            get
-            {
-                if (_columns == null)
-                {
-                    _columns = Type
-                                .GetProperties()
-                                .Where(property => property.GetCustomAttribute<NotMappedAttribute>() == null)
-                                .Select(property => new DbColumn
-                                {
-                                    Name = property.Name,
-                                    Type = property.PropertyType,
-                                    IsKey = property.GetCustomAttribute<KeyAttribute>() != null
-                                })
-                                .ToArray();
-                }
-
-                return _columns;
-            }
-        }
-
-        private DbColumn[] _columns { get; set; }
 
         // https://www.sqlite.org/datatype3.html#affinity_name_examples
         private readonly Dictionary<Type, string> TypeSqliteTypeMapper = new Dictionary<Type, string>

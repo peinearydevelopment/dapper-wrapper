@@ -1,5 +1,6 @@
 ﻿namespace DataAccess
 {
+    using DataAccess.Attributes;
     using System;
     using System.ComponentModel.DataAnnotations;
     using System.ComponentModel.DataAnnotations.Schema;
@@ -18,6 +19,7 @@
 
         public bool IsApproved { get; set; }
 
+        [ForeignConstraint(typeof(BlogPostDto))]
         public int BlogPostId { get; set; }
     }
 }

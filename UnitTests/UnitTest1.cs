@@ -42,34 +42,29 @@ namespace UnitTests
         [Test]
         public async Task Test4()
         {
-            SqlMapper.AddTypeHandler(new DateTimeOffsetHandler());
             var dbContext = Setup.ServiceProvider.GetService<SqliteConnection>();
             var time = DateTimeOffset.UtcNow;
             var blogPost = new BlogPostDto
             {
-                Id = 1,
                 Title = "SqLite",
                 DeprecatedDate = time
             };
             var (sql, parameters) = blogPost.CreateInsertSqlStatement(ConnectionType.SqLite);
             await dbContext.ExecuteAsync(sql, parameters).ConfigureAwait(false);
+
             var results = await dbContext.QueryAsync<BlogPostDto>("select Id, Title, DeprecatedDate from blog_Posts").ConfigureAwait(false);
+
+            var comment = new CommentDto
+            {
+                BlogPostId = 2,
+                Comment = "Hello world!"
+            };
+            (sql, parameters) = comment.CreateInsertSqlStatement(ConnectionType.SqLite);
+            await dbContext.ExecuteAsync(sql, parameters).ConfigureAwait(false);
+
             Assert.AreEqual(1, results.First().Id);
             Assert.AreEqual("SqLite", results.First().Title);
             Assert.AreEqual(time, results.First().DeprecatedDate);
-        }
-    }
-
-    public class DateTimeOffsetHandler : SqlMapper.TypeHandler<DateTimeOffset>
-    {
-        public override void SetValue(IDbDataParameter parameter, DateTimeOffset value)
-        {
-            parameter.Value = value;
-        }
-
-        public override DateTimeOffset Parse(object value)
-        {
-            return DateTimeOffset.Parse(value.ToString());
         }
     }
 }
