@@ -23,6 +23,7 @@
             {
                 if (_serviceProvider == null)
                 {
+                    // https://github.com/aspnet/EntityFrameworkCore/blob/8c25ff590b8d2bb19a59c461225c277a0c2329b1/src/EFCore/EntityFrameworkServiceCollectionExtensions.cs#LC256
                     var configurationContainer = new ServiceCollection();
 
                     var sqliteConnection = new SqliteConnection("Data Source=:memory:");
